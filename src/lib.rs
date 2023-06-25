@@ -5,6 +5,11 @@ use utils::parse_html_selector;
 
 mod utils;
 
+const HTML_VOID_ELEMENTS: &'static [&str] = &[
+    "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source",
+    "track", "wbr", "command", "keygen", "menuitem",
+];
+
 #[derive(Clone)]
 pub enum Node {
     Tag(TagNode),
@@ -17,17 +22,21 @@ impl Node {
     pub fn to_html(&self) -> String {
         match self {
             Self::Tag(elem) => {
-                // todo: consider elements with no closing tags like input
-                let inner: String = elem.children.iter().map(|item| item.to_html()).collect();
                 if let Some(properties) = &elem.properties {
-                    let tag = &properties.tag;
+                    let tag: &str = &properties.tag.clone();
                     let mut attributes = attirbutes_to_inline_html(&properties.attributes);
                     if attributes.len() > 0 {
                         attributes = " ".to_owned() + &attributes;
                     }
-                    format!("<{tag}{attributes}>{inner}</{tag}>")
+                    if !HTML_VOID_ELEMENTS.contains(&tag) {
+                        let inner: String =
+                            elem.children.iter().map(|item| item.to_html()).collect();
+                        format!("<{tag}{attributes}>{inner}</{tag}>")
+                    } else {
+                        format!("<{tag}{attributes} />")
+                    }
                 } else {
-                    inner
+                    elem.children.iter().map(|item| item.to_html()).collect()
                 }
             }
             Self::Text(text) => text.content.to_owned(), // todo: escape text
