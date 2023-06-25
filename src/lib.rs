@@ -5,6 +5,7 @@ use utils::parse_html_selector;
 
 mod utils;
 
+#[derive(Clone)]
 pub enum Node {
     Tag(TagNode),
     Text(RawTextNode),
@@ -36,6 +37,7 @@ impl Node {
     }
 }
 
+#[derive(Clone)]
 pub struct RawTextNode {
     content: String,
 }
@@ -48,16 +50,17 @@ impl RawTextNode {
     }
 }
 
+#[derive(Clone)]
 pub struct TagNode {
     properties: Option<NodeProperties>,
     children: Vec<Node>,
 }
 
 pub trait ToNode {
-    fn to_node(self) -> Node;
+    fn to_node(&self) -> Node;
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct NodeProperties {
     tag: String,
     attributes: HashMap<String, String>,
@@ -75,13 +78,13 @@ pub fn elem(selector: &str, children: impl ToNode) -> Node {
 }
 
 impl ToNode for Node {
-    fn to_node(self) -> Node {
-        self
+    fn to_node(&self) -> Node {
+        self.clone()
     }
 }
 
 impl<T: ToNode> ToNode for Vec<T> {
-    fn to_node(self) -> Node {
+    fn to_node(&self) -> Node {
         Node::Tag(TagNode {
             properties: None,
             children: self.into_iter().map(|item| item.to_node()).collect(),
@@ -90,9 +93,9 @@ impl<T: ToNode> ToNode for Vec<T> {
 }
 
 impl ToNode for Option<Node> {
-    fn to_node(self) -> Node {
+    fn to_node(&self) -> Node {
         if let Some(v) = self {
-            v.to_node()
+            v.clone()
         } else {
             Node::None
         }
@@ -100,7 +103,7 @@ impl ToNode for Option<Node> {
 }
 
 impl ToNode for &str {
-    fn to_node(self) -> Node {
+    fn to_node(&self) -> Node {
         Node::Text(RawTextNode::from(self))
     }
 }
