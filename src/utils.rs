@@ -3,7 +3,6 @@ use std::collections::HashMap;
 
 use crate::NodeProperties;
 
-// todo: consider doublequotes escape
 pub fn parse_html_selector(selector: &str) -> NodeProperties {
     let mut tag = String::new();
     let mut attributes = HashMap::new();
