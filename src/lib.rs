@@ -1,7 +1,7 @@
 use std::{collections::HashMap, vec};
 
 use utils::attirbutes_to_inline_html;
-use utils::parse_html_selector;
+use utils::parse_elem_properties;
 
 mod utils;
 
@@ -75,8 +75,9 @@ pub struct NodeProperties {
     attributes: HashMap<String, String>,
 }
 
-pub fn elem(selector: &str, children: impl ToNode) -> Node {
-    let mut properties = parse_html_selector(selector);
+// todo: macro for this
+pub fn elem(selector: &str, attributes: impl ToAttributesList, children: impl ToNode) -> Node {
+    let mut properties = parse_elem_properties(selector, &attributes.to_hash_map());
     if properties.tag.len() == 0 {
         properties.tag = "div".to_string();
     }
@@ -84,6 +85,30 @@ pub fn elem(selector: &str, children: impl ToNode) -> Node {
         properties: Some(properties),
         children: vec![children.to_node()],
     })
+}
+
+pub trait ToAttributesList {
+    fn to_hash_map(&self) -> HashMap<String, String>;
+}
+
+impl ToAttributesList for Option<HashMap<String, String>> {
+    fn to_hash_map(&self) -> HashMap<String, String> {
+        if let Some(v) = self {
+            v.clone()
+        } else {
+            HashMap::new()
+        }
+    }
+}
+
+impl ToAttributesList for Vec<(&str, &str)> {
+    fn to_hash_map(&self) -> HashMap<String, String> {
+        let mut result = HashMap::new();
+        for (key, value) in self {
+            result.insert(key.to_string(), value.to_string());
+        }
+        result
+    }
 }
 
 impl ToNode for Node {

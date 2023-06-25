@@ -3,9 +3,12 @@ use std::collections::HashMap;
 
 use crate::NodeProperties;
 
-pub fn parse_html_selector(selector: &str) -> NodeProperties {
+pub fn parse_elem_properties(
+    selector: &str,
+    attributes: &HashMap<String, String>,
+) -> NodeProperties {
     let mut tag = String::new();
-    let mut attributes = HashMap::new();
+    let mut node_attributes = HashMap::new();
     let mut classes = vec![];
 
     let regex = Regex::new(
@@ -22,14 +25,14 @@ pub fn parse_html_selector(selector: &str) -> NodeProperties {
 
             match match_type {
                 '.' => classes.push(match_value),
-                '#' => _ = attributes.insert("id".to_string(), match_value),
+                '#' => _ = node_attributes.insert("id".to_string(), match_value),
                 '[' => {
                     // todo: support empty attributes
                     let regex = Regex::new(r#"\[[\s]*(.*)=(.*)[\s]*\]"#).unwrap();
                     let result = regex.captures(&selector_match).unwrap();
 
                     if let Some(result) = result {
-                        attributes.insert(
+                        node_attributes.insert(
                             result.get(1).unwrap().as_str().trim().to_owned(),
                             result.get(2).unwrap().as_str().trim().to_owned(),
                         );
@@ -55,11 +58,23 @@ pub fn parse_html_selector(selector: &str) -> NodeProperties {
     }
 
     let tag = tag.to_string();
-    if classes.len() > 0 {
-        attributes.insert("class".to_string(), classes.join(" "));
+
+    for (key, value) in attributes {
+        if key == "class" || key == "className" {
+            classes.push(value.to_owned());
+        } else {
+            node_attributes.insert(key.to_owned(), value.to_owned());
+        }
     }
 
-    NodeProperties { tag, attributes }
+    if classes.len() > 0 {
+        node_attributes.insert("class".to_string(), classes.join(" "));
+    }
+
+    NodeProperties {
+        tag,
+        attributes: node_attributes,
+    }
 }
 
 // todo: consider escaping doublequotes
