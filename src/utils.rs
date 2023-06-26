@@ -27,15 +27,20 @@ pub fn parse_elem_properties(
                 '.' => classes.push(match_value),
                 '#' => _ = node_attributes.insert("id".to_string(), match_value),
                 '[' => {
-                    // todo: support empty attributes
-                    let regex = Regex::new(r#"\[[\s]*(.*)=(.*)[\s]*\]"#).unwrap();
-                    let result = regex.captures(&selector_match).unwrap();
+                    // todo: can [x] values contain escaped equal signs?
+                    if match_value.contains('=') {
+                        let regex = Regex::new(r#"\[[\s]*(.*)=(.*)[\s]*\]"#).unwrap();
+                        let result = regex.captures(&selector_match).unwrap();
 
-                    if let Some(result) = result {
-                        node_attributes.insert(
-                            result.get(1).unwrap().as_str().trim().to_owned(),
-                            result.get(2).unwrap().as_str().trim().to_owned(),
-                        );
+                        if let Some(result) = result {
+                            node_attributes.insert(
+                                result.get(1).unwrap().as_str().trim().to_owned(),
+                                result.get(2).unwrap().as_str().trim().to_owned(),
+                            );
+                        }
+                    } else {
+                        // todo: make sure the value should be like this
+                        node_attributes.insert(match_value.to_owned(), match_value.to_owned());
                     }
 
                     /*
