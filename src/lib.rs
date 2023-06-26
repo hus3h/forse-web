@@ -1,6 +1,7 @@
 use std::{collections::HashMap, vec};
 
 use utils::attirbutes_to_inline_html;
+use utils::attirbutes_to_json_object;
 use utils::parse_elem_properties;
 
 mod utils;
@@ -41,6 +42,58 @@ impl Node {
             }
             Self::Text(text) => text.content.to_owned(), // todo: escape text
             Self::Html(html) => html.content.to_owned(),
+            Self::None => String::from(""),
+        }
+    }
+
+    // todo: make sure this follows the different hyperscript cases
+    pub fn to_hyperscript(&self, function_name: &str) -> String {
+        match self {
+            Self::Tag(elem) => {
+                if let Some(properties) = &elem.properties {
+                    let tag: &str = &properties.tag.clone();
+                    let mut inner_string = String::new();
+                    if !HTML_VOID_ELEMENTS.contains(&tag) {
+                        let inner: Vec<String> = elem
+                            .children
+                            .iter()
+                            .map(|item| item.to_hyperscript(function_name))
+                            .filter(|item| item != "")
+                            .collect();
+                        if inner.len() > 0 {
+                            if inner.len() == 1 {
+                                inner_string = ",".to_string() + &inner[0];
+                            } else {
+                                inner_string = ",[".to_string() + &inner.join(",") + "]";
+                            }
+                        }
+                    }
+                    let mut attributes_string = String::new();
+                    if properties.attributes.len() > 0 {
+                        attributes_string =
+                            ",".to_string() + &attirbutes_to_json_object(&properties.attributes);
+                    }
+                    format!("{function_name}(\"{tag}\"{attributes_string}{inner_string})")
+                } else {
+                    let result: Vec<String> = elem
+                        .children
+                        .iter()
+                        .map(|item| item.to_hyperscript(function_name))
+                        .filter(|item| item != "")
+                        .collect();
+                    result.join(",")
+                }
+            }
+            Self::Text(text) => {
+                // todo: escape text & doublequotes
+                let inner = text.content.to_owned();
+                format!("\"{inner}\"")
+            }
+            Self::Html(html) => {
+                // todo: change to coorect format
+                let inner = html.content.to_owned();
+                format!("\"{inner}\"")
+            }
             Self::None => String::from(""),
         }
     }

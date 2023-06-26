@@ -85,3 +85,12 @@ pub fn attirbutes_to_inline_html(attributes: &HashMap<String, String>) -> String
     }
     result.join(" ")
 }
+
+// todo: use proper json
+pub fn attirbutes_to_json_object(attributes: &HashMap<String, String>) -> String {
+    let mut inner = vec![];
+    for (key, value) in attributes {
+        inner.push(format!("\"{key}\":\"{value}\""));
+    }
+    "{".to_string() + &inner.join(",") + "}"
+}
