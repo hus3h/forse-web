@@ -40,7 +40,16 @@ pub fn parse_elem_properties(
                         }
                     } else {
                         // todo: make sure the value should be like this
-                        node_attributes.insert(match_value.to_owned(), match_value.to_owned());
+                        let regex = Regex::new(r#"^\[(.*)\]$"#).unwrap();
+                        let result = regex
+                            .captures(&selector_match)
+                            .unwrap()
+                            .unwrap()
+                            .get(1)
+                            .unwrap()
+                            .as_str();
+
+                        node_attributes.insert(result.to_string(), "".to_string());
                     }
 
                     /*
