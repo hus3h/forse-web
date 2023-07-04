@@ -1,14 +1,13 @@
 use fancy_regex::Regex;
-use std::collections::HashMap;
 
-use crate::NodeProperties;
+use crate::{Attribute, AttributeValue, NodeProperties};
 
 pub fn parse_elem_properties(
     selector: &str,
-    attributes: &HashMap<String, String>,
+    attributes: &Option<Vec<Attribute>>,
 ) -> NodeProperties {
     let mut tag = String::new();
-    let mut node_attributes = HashMap::new();
+    let mut node_attributes = Vec::new();
     let mut classes = vec![];
 
     let regex = Regex::new(
@@ -25,7 +24,7 @@ pub fn parse_elem_properties(
 
             match match_type {
                 '.' => classes.push(match_value),
-                '#' => _ = node_attributes.insert("id".to_string(), match_value),
+                '#' => _ = node_attributes.push(Attribute::from("id", match_value)),
                 '[' => {
                     // todo: can [x] values contain escaped equal signs?
                     if match_value.contains('=') {
@@ -33,10 +32,10 @@ pub fn parse_elem_properties(
                         let result = regex.captures(&selector_match).unwrap();
 
                         if let Some(result) = result {
-                            node_attributes.insert(
-                                result.get(1).unwrap().as_str().trim().to_owned(),
-                                result.get(2).unwrap().as_str().trim().to_owned(),
-                            );
+                            node_attributes.push(Attribute::from(
+                                result.get(1).unwrap().as_str().trim(),
+                                result.get(2).unwrap().as_str().trim(),
+                            ));
                         }
                     } else {
                         // todo: make sure the value should be like this
@@ -49,7 +48,7 @@ pub fn parse_elem_properties(
                             .unwrap()
                             .as_str();
 
-                        node_attributes.insert(result.to_string(), "".to_string());
+                        node_attributes.push(Attribute::from(result, ""));
                     }
 
                     /*
@@ -73,16 +72,26 @@ pub fn parse_elem_properties(
 
     let tag = tag.to_string();
 
-    for (key, value) in attributes {
-        if key == "class" || key == "className" {
-            classes.push(value.to_owned());
-        } else {
-            node_attributes.insert(key.to_owned(), value.to_owned());
+    if let Some(attributes) = attributes {
+        for attribute in attributes {
+            let key = &attribute.key;
+            match &attribute.value {
+                AttributeValue::String(value) => {
+                    if key == "class" || key == "className" {
+                        classes.push(value.to_owned());
+                    } else {
+                        node_attributes.push(Attribute::new(
+                            &key,
+                            AttributeValue::String(value.to_owned()),
+                        ));
+                    }
+                }
+            }
         }
     }
 
     if classes.len() > 0 {
-        node_attributes.insert("class".to_string(), classes.join(" "));
+        node_attributes.push(Attribute::from("class", classes.join(" ")));
     }
 
     NodeProperties {
@@ -92,19 +101,29 @@ pub fn parse_elem_properties(
 }
 
 // todo: consider escaping doublequotes
-pub fn attirbutes_to_inline_html(attributes: &HashMap<String, String>) -> String {
+pub fn attirbutes_to_inline_html(attributes: &Vec<Attribute>) -> String {
     let mut result = vec![];
-    for (key, value) in attributes {
-        result.push(format!("{key}=\"{value}\""));
+    for attribute in attributes {
+        let key = &attribute.key;
+        match &attribute.value {
+            AttributeValue::String(value) => {
+                result.push(format!("{key}=\"{value}\""));
+            }
+        }
     }
     result.join(" ")
 }
 
 // todo: use proper json
-pub fn attirbutes_to_json_object(attributes: &HashMap<String, String>) -> String {
+pub fn attirbutes_to_json_object(attributes: &Vec<Attribute>) -> String {
     let mut inner = vec![];
-    for (key, value) in attributes {
-        inner.push(format!("\"{key}\":\"{value}\""));
+    for attribute in attributes {
+        let key = &attribute.key;
+        match &attribute.value {
+            AttributeValue::String(value) => {
+                inner.push(format!("\"{key}\":\"{value}\""));
+            }
+        }
     }
     "{".to_string() + &inner.join(",") + "}"
 }

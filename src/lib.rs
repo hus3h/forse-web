@@ -1,4 +1,4 @@
-use std::{collections::HashMap, vec};
+use std::vec;
 
 use utils::attirbutes_to_inline_html;
 use utils::attirbutes_to_json_object;
@@ -122,15 +122,64 @@ pub trait ToNode {
     fn to_node(&self) -> Node;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
+pub enum AttributeValue {
+    String(String),
+}
+
+#[derive(Clone)]
+pub struct Attribute {
+    key: String,
+    value: AttributeValue,
+}
+
+impl Attribute {
+    pub fn new(key: &str, value: AttributeValue) -> Attribute {
+        Attribute {
+            key: key.to_string(),
+            value,
+        }
+    }
+
+    pub fn from(key: &str, value: impl ToAttributeValue) -> Attribute {
+        Attribute {
+            key: key.to_string(),
+            value: value.to_attribute_value(),
+        }
+    }
+}
+
+pub trait ToAttributeValue {
+    fn to_attribute_value(&self) -> AttributeValue;
+}
+
+impl ToAttributeValue for AttributeValue {
+    fn to_attribute_value(&self) -> AttributeValue {
+        self.clone()
+    }
+}
+
+impl ToAttributeValue for String {
+    fn to_attribute_value(&self) -> AttributeValue {
+        AttributeValue::String(self.to_owned())
+    }
+}
+
+impl ToAttributeValue for &str {
+    fn to_attribute_value(&self) -> AttributeValue {
+        AttributeValue::String(self.to_string())
+    }
+}
+
+#[derive(Clone)]
 pub struct NodeProperties {
     tag: String,
-    attributes: HashMap<String, String>,
+    attributes: Vec<Attribute>,
 }
 
 // todo: macro for this
-pub fn elem(selector: &str, attributes: impl ToAttributesList, children: impl ToNode) -> Node {
-    let mut properties = parse_elem_properties(selector, &attributes.to_hash_map());
+pub fn elem(selector: &str, attributes: Option<Vec<Attribute>>, children: impl ToNode) -> Node {
+    let mut properties = parse_elem_properties(selector, &attributes);
     if properties.tag.len() == 0 {
         properties.tag = "div".to_string();
     }
@@ -138,30 +187,6 @@ pub fn elem(selector: &str, attributes: impl ToAttributesList, children: impl To
         properties: Some(properties),
         children: vec![children.to_node()],
     })
-}
-
-pub trait ToAttributesList {
-    fn to_hash_map(&self) -> HashMap<String, String>;
-}
-
-impl ToAttributesList for Option<HashMap<String, String>> {
-    fn to_hash_map(&self) -> HashMap<String, String> {
-        if let Some(v) = self {
-            v.clone()
-        } else {
-            HashMap::new()
-        }
-    }
-}
-
-impl ToAttributesList for Vec<(&str, &str)> {
-    fn to_hash_map(&self) -> HashMap<String, String> {
-        let mut result = HashMap::new();
-        for (key, value) in self {
-            result.insert(key.to_string(), value.to_string());
-        }
-        result
-    }
 }
 
 impl ToNode for Node {
