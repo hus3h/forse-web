@@ -125,6 +125,7 @@ pub trait ToNode {
 #[derive(Clone)]
 pub enum AttributeValue {
     String(String),
+    EventAction(EventAction),
 }
 
 #[derive(Clone)]
@@ -149,6 +150,57 @@ impl Attribute {
     }
 }
 
+#[derive(Clone)]
+pub struct EventAction {
+    hyperscript_action: HyperscriptAction,
+    html_action: HtmlAction,
+}
+
+impl EventAction {
+    pub fn ajax_default(url: &str) -> Self {
+        Self {
+            hyperscript_action: HyperscriptAction::ajax_default(url),
+            html_action: HtmlAction::redirect(url),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub enum HyperscriptAction {
+    AjaxRequest { url: String },
+}
+
+impl HyperscriptAction {
+    pub fn ajax_default(url: &str) -> Self {
+        Self::AjaxRequest {
+            url: url.to_owned(),
+        }
+    }
+
+    // todo: use function name, allow customization, add request params
+    pub fn to_hyperscript(&self) -> String {
+        match self {
+            Self::AjaxRequest { url } => {
+                let options = &format!("url:{url}");
+                "function(){request({".to_string() + options + "})}"
+            }
+        }
+    }
+}
+
+#[derive(Clone)]
+pub enum HtmlAction {
+    Redirect { url: String },
+}
+
+impl HtmlAction {
+    pub fn redirect(url: &str) -> Self {
+        Self::Redirect {
+            url: url.to_owned(),
+        }
+    }
+}
+
 pub trait ToAttributeValue {
     fn to_attribute_value(&self) -> AttributeValue;
 }
@@ -156,6 +208,12 @@ pub trait ToAttributeValue {
 impl ToAttributeValue for AttributeValue {
     fn to_attribute_value(&self) -> AttributeValue {
         self.clone()
+    }
+}
+
+impl ToAttributeValue for EventAction {
+    fn to_attribute_value(&self) -> AttributeValue {
+        AttributeValue::EventAction(self.clone())
     }
 }
 

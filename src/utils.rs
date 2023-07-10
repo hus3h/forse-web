@@ -1,6 +1,6 @@
 use fancy_regex::Regex;
 
-use crate::{Attribute, AttributeValue, NodeProperties};
+use crate::{Attribute, AttributeValue, NodeProperties, ToAttributeValue};
 
 pub fn parse_elem_properties(
     selector: &str,
@@ -86,6 +86,12 @@ pub fn parse_elem_properties(
                         ));
                     }
                 }
+                _ => {
+                    node_attributes.push(Attribute::new(
+                        &key,
+                        (&attribute.value).to_owned(),
+                    ));
+                }
             }
         }
     }
@@ -109,6 +115,7 @@ pub fn attirbutes_to_inline_html(attributes: &Vec<Attribute>) -> String {
             AttributeValue::String(value) => {
                 result.push(format!("{key}=\"{value}\""));
             }
+            AttributeValue::EventAction(_) => {}
         }
     }
     result.join(" ")
@@ -122,6 +129,10 @@ pub fn attirbutes_to_json_object(attributes: &Vec<Attribute>) -> String {
         match &attribute.value {
             AttributeValue::String(value) => {
                 inner.push(format!("\"{key}\":\"{value}\""));
+            }
+            AttributeValue::EventAction(value) => {
+                let attribute_value = value.hyperscript_action.to_hyperscript();
+                inner.push(format!("\"{key}\":\"{attribute_value}\""));
             }
         }
     }
