@@ -209,7 +209,7 @@ pub struct EventAction {
 }
 
 impl EventAction {
-    pub fn ajax_default(url: &str, ajax_options: Option<AjaxRequestOptions>) -> Self {
+    pub fn ajax_default(url: &str, ajax_options: Option<Vec<AjaxRequestOption>>) -> Self {
         Self {
             hyperscript_action: HyperscriptAction::ajax_default(url, ajax_options),
             html_action: HtmlAction::redirect(url),
@@ -221,15 +221,15 @@ impl EventAction {
 pub enum HyperscriptAction {
     AjaxRequest {
         url: String,
-        options: Option<AjaxRequestOptions>,
+        options: Vec<AjaxRequestOption>,
     },
 }
 
 impl HyperscriptAction {
-    pub fn ajax_default(url: &str, options: Option<AjaxRequestOptions>) -> Self {
+    pub fn ajax_default(url: &str, options: Option<Vec<AjaxRequestOption>>) -> Self {
         Self::AjaxRequest {
             url: url.to_owned(),
-            options,
+            options: options.unwrap_or_default(),
         }
     }
 
@@ -238,27 +238,33 @@ impl HyperscriptAction {
             Self::AjaxRequest { url, options } => {
                 // todo: escape quotes
                 let mut options_strings = vec![];
-                if let Some(options) = options {
-                    if options.method != "" {
-                        let method = &options.method;
-                        options_strings.push(format!("method:\"{method}\""));
-                    } else {
-                        options_strings.push(format!("method:\"GET\""));
-                    }
-                    if options.params.len() > 0 {
-                        // todo: escape quotes
-                        let mut params_strings = vec![];
-                        for (key, value) in &options.params {
-                            params_strings.push(format!("{key}:\"{value}\""));
+                let mut request_method = "";
+                for option in options {
+                    match option {
+                        AjaxRequestOption::Method(value) => {
+                            request_method = value;
                         }
-                        let params_strings = params_strings.join(",");
-                        options_strings.push("{".to_string() + &params_strings + "}");
-                    }
-                    if options.body != "" {
-                        let body = &options.body;
-                        options_strings.push(format!("body:\"{body}\""));
+                        AjaxRequestOption::Params(value) => {
+                            if value.len() > 0 {
+                                // todo: escape quotes
+                                let mut params_strings = vec![];
+                                for (key, value) in value {
+                                    params_strings.push(format!("{key}:\"{value}\""));
+                                }
+                                let params_strings = params_strings.join(",");
+                                options_strings
+                                    .push("params:{".to_string() + &params_strings + "}");
+                            }
+                        }
+                        AjaxRequestOption::Body(value) => {
+                            options_strings.push(format!("body:\"{value}\""));
+                        }
                     }
                 }
+                if request_method == "" {
+                    request_method = "GET";
+                }
+                options_strings.push(format!("method:\"{request_method}\""));
                 let mut arguments_string = format!("url:\"{url}\"");
                 if options_strings.len() > 0 {
                     let options_strings = options_strings.join(",");
@@ -287,24 +293,10 @@ impl HtmlAction {
 }
 
 #[derive(Clone)]
-pub struct AjaxRequestOptions {
-    method: String,
-    params: HashMap<String, String>,
-    body: String,
-}
-
-impl AjaxRequestOptions {
-    pub fn new(
-        method: Option<&str>,
-        params: Option<HashMap<String, String>>,
-        body: Option<&str>,
-    ) -> Self {
-        Self {
-            method: method.unwrap_or_default().to_string(),
-            params: params.unwrap_or_default(),
-            body: body.unwrap_or_default().to_string(),
-        }
-    }
+pub enum AjaxRequestOption {
+    Method(String),
+    Params(HashMap<String, String>),
+    Body(String),
 }
 
 pub trait ToAttributeValue {
