@@ -75,7 +75,7 @@ impl Node {
                     }
                     let mut attributes_strings = vec![];
                     for attribute in &properties.attributes {
-                        let value = attribute.to_json_object_item();
+                        let value = attribute.to_json_object_item(function_name);
                         if value != "" {
                             attributes_strings.push(value);
                         }
@@ -173,14 +173,14 @@ impl Attribute {
     }
 
     // todo: use proper json
-    pub fn to_json_object_item(&self) -> String {
+    pub fn to_json_object_item(&self, function_name: &str) -> String {
         let key = &self.key;
         match &self.value {
             AttributeValue::String(value) => {
                 format!("\"{key}\":\"{value}\"")
             }
             AttributeValue::EventAction(value) => {
-                let attribute_value = value.hyperscript_action.to_hyperscript();
+                let attribute_value = value.hyperscript_action.to_hyperscript(function_name);
                 format!("\"{key}\":\"{attribute_value}\"")
             }
         }
@@ -214,12 +214,12 @@ impl HyperscriptAction {
         }
     }
 
-    // todo: use function name, allow customization, add request params
-    pub fn to_hyperscript(&self) -> String {
+    // todo: allow customization, add request params
+    pub fn to_hyperscript(&self, function_name: &str) -> String {
         match self {
             Self::AjaxRequest { url } => {
                 let options = &format!("url:{url}");
-                "function(){request({".to_string() + options + "})}"
+                "function(){".to_string() + function_name + ".request({" + options + "})}"
             }
         }
     }
