@@ -242,6 +242,8 @@ impl HyperscriptAction {
                     if options.method != "" {
                         let method = &options.method;
                         options_strings.push(format!("method:\"{method}\""));
+                    } else {
+                        options_strings.push(format!("method:\"GET\""));
                     }
                     if options.params.len() > 0 {
                         // todo: escape quotes
@@ -270,7 +272,10 @@ impl HyperscriptAction {
 
 #[derive(Clone)]
 pub enum HtmlAction {
-    Redirect { url: String },
+    Redirect {
+        // behavior: nodes with this as onclick action get a parent <a href="url"> tag (only for html output)
+        url: String,
+    },
 }
 
 impl HtmlAction {
