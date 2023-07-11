@@ -1,7 +1,5 @@
 use std::vec;
 
-use utils::attirbutes_to_inline_html;
-use utils::attirbutes_to_json_object;
 use utils::parse_elem_properties;
 
 mod utils;
@@ -25,7 +23,14 @@ impl Node {
             Self::Tag(elem) => {
                 if let Some(properties) = &elem.properties {
                     let tag: &str = &properties.tag.clone();
-                    let mut attributes = attirbutes_to_inline_html(&properties.attributes);
+                    let mut attributes_strings = vec![];
+                    for attribute in &properties.attributes {
+                        let value = attribute.to_inline_html_item();
+                        if value != "" {
+                            attributes_strings.push(value);
+                        }
+                    }
+                    let mut attributes = attributes_strings.join(" ");
                     if attributes.len() > 0 {
                         attributes = " ".to_owned() + &attributes;
                     }
@@ -68,12 +73,19 @@ impl Node {
                             }
                         }
                     }
-                    let mut attributes_string = String::new();
-                    if properties.attributes.len() > 0 {
-                        attributes_string =
-                            ",".to_string() + &attirbutes_to_json_object(&properties.attributes);
+                    let mut attributes_strings = vec![];
+                    for attribute in &properties.attributes {
+                        let value = attribute.to_json_object_item();
+                        if value != "" {
+                            attributes_strings.push(value);
+                        }
                     }
-                    format!("{function_name}(\"{tag}\"{attributes_string}{inner_string})")
+                    let mut attributes_final_string = String::new();
+                    if attributes_strings.len() > 0 {
+                        attributes_final_string =
+                            ",{".to_string() + &attributes_strings.join(",") + "}";
+                    }
+                    format!("{function_name}(\"{tag}\"{attributes_final_string}{inner_string})")
                 } else {
                     let result: Vec<String> = elem
                         .children
@@ -146,6 +158,31 @@ impl Attribute {
         Attribute {
             key: key.to_string(),
             value: value.to_attribute_value(),
+        }
+    }
+
+    // todo: consider escaping doublequotes
+    pub fn to_inline_html_item(&self) -> String {
+        let key = &self.key;
+        match &self.value {
+            AttributeValue::String(value) => {
+                format!("{key}=\"{value}\"")
+            }
+            AttributeValue::EventAction(_) => String::from(""),
+        }
+    }
+
+    // todo: use proper json
+    pub fn to_json_object_item(&self) -> String {
+        let key = &self.key;
+        match &self.value {
+            AttributeValue::String(value) => {
+                format!("\"{key}\":\"{value}\"")
+            }
+            AttributeValue::EventAction(value) => {
+                let attribute_value = value.hyperscript_action.to_hyperscript();
+                format!("\"{key}\":\"{attribute_value}\"")
+            }
         }
     }
 }

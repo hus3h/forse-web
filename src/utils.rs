@@ -1,6 +1,6 @@
 use fancy_regex::Regex;
 
-use crate::{Attribute, AttributeValue, NodeProperties, ToAttributeValue};
+use crate::{Attribute, AttributeValue, NodeProperties};
 
 pub fn parse_elem_properties(
     selector: &str,
@@ -87,10 +87,7 @@ pub fn parse_elem_properties(
                     }
                 }
                 _ => {
-                    node_attributes.push(Attribute::new(
-                        &key,
-                        (&attribute.value).to_owned(),
-                    ));
+                    node_attributes.push(Attribute::new(&key, (&attribute.value).to_owned()));
                 }
             }
         }
@@ -104,37 +101,4 @@ pub fn parse_elem_properties(
         tag,
         attributes: node_attributes,
     }
-}
-
-// todo: consider escaping doublequotes
-pub fn attirbutes_to_inline_html(attributes: &Vec<Attribute>) -> String {
-    let mut result = vec![];
-    for attribute in attributes {
-        let key = &attribute.key;
-        match &attribute.value {
-            AttributeValue::String(value) => {
-                result.push(format!("{key}=\"{value}\""));
-            }
-            AttributeValue::EventAction(_) => {}
-        }
-    }
-    result.join(" ")
-}
-
-// todo: use proper json
-pub fn attirbutes_to_json_object(attributes: &Vec<Attribute>) -> String {
-    let mut inner = vec![];
-    for attribute in attributes {
-        let key = &attribute.key;
-        match &attribute.value {
-            AttributeValue::String(value) => {
-                inner.push(format!("\"{key}\":\"{value}\""));
-            }
-            AttributeValue::EventAction(value) => {
-                let attribute_value = value.hyperscript_action.to_hyperscript();
-                inner.push(format!("\"{key}\":\"{attribute_value}\""));
-            }
-        }
-    }
-    "{".to_string() + &inner.join(",") + "}"
 }
