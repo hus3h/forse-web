@@ -23,11 +23,26 @@ impl Node {
             Self::Tag(elem) => {
                 if let Some(properties) = &elem.properties {
                     let tag: &str = &properties.tag.clone();
+                    let mut outer_before = String::new();
+                    let mut outer_after = String::new();
                     let mut attributes_strings = vec![];
                     for attribute in &properties.attributes {
-                        let value = attribute.to_inline_html_item();
-                        if value != "" {
-                            attributes_strings.push(value);
+                        // todo: escape quotes?
+                        if attribute.key.to_lowercase() == "onclick" {
+                            match &attribute.value {
+                                AttributeValue::EventAction(value) => match &value.html_action {
+                                    HtmlAction::Redirect { url } => {
+                                        outer_before = "<a href=\"".to_string() + url + "\">";
+                                        outer_after = "</a>".to_string();
+                                    }
+                                },
+                                AttributeValue::String(_) => {}
+                            }
+                        } else {
+                            let value = attribute.to_inline_html_item();
+                            if value != "" {
+                                attributes_strings.push(value);
+                            }
                         }
                     }
                     let mut attributes = attributes_strings.join(" ");
@@ -37,9 +52,9 @@ impl Node {
                     if !HTML_VOID_ELEMENTS.contains(&tag) {
                         let inner: String =
                             elem.children.iter().map(|item| item.to_html()).collect();
-                        format!("<{tag}{attributes}>{inner}</{tag}>")
+                        format!("{outer_before}<{tag}{attributes}>{inner}</{tag}>{outer_after}")
                     } else {
-                        format!("<{tag}{attributes} />")
+                        format!("{outer_before}<{tag}{attributes} />{outer_after}")
                     }
                 } else {
                     elem.children.iter().map(|item| item.to_html()).collect()
