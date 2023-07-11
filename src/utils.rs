@@ -2,6 +2,7 @@ use fancy_regex::Regex;
 
 use crate::{Attribute, AttributeValue, NodeProperties};
 
+// https://github.com/MithrilJS/mithril.js/blob/71ce364c54bc501ce4a02f34e8d60271fe4b4905/render/hyperscript.js#L7
 pub fn parse_elem_properties(
     selector: &str,
     attributes: &Option<Vec<Attribute>>,

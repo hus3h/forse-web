@@ -245,19 +245,41 @@ impl HyperscriptAction {
                             request_method = value;
                         }
                         AjaxRequestOption::Params(value) => {
-                            if value.len() > 0 {
-                                // todo: escape quotes
-                                let mut params_strings = vec![];
-                                for (key, value) in value {
-                                    params_strings.push(format!("{key}:\"{value}\""));
-                                }
-                                let params_strings = params_strings.join(",");
-                                options_strings
-                                    .push("params:{".to_string() + &params_strings + "}");
+                            // todo: escape quotes
+                            let mut params_strings = vec![];
+                            for (key, value) in value {
+                                params_strings.push(format!("{key}:\"{value}\""));
                             }
+                            let params_strings = params_strings.join(",");
+                            options_strings.push("params:{".to_string() + &params_strings + "}");
+                        }
+                        AjaxRequestOption::Headers(value) => {
+                            // todo: escape quotes
+                            let mut params_strings = vec![];
+                            for (key, value) in value {
+                                params_strings.push(format!("{key}:\"{value}\""));
+                            }
+                            let params_strings = params_strings.join(",");
+                            options_strings.push("headers:{".to_string() + &params_strings + "}");
+                        }
+                        AjaxRequestOption::User(value) => {
+                            options_strings.push(format!("user:\"{value}\""));
+                        }
+                        AjaxRequestOption::Password(value) => {
+                            options_strings.push(format!("password:\"{value}\""));
                         }
                         AjaxRequestOption::Body(value) => {
                             options_strings.push(format!("body:\"{value}\""));
+                        }
+                        AjaxRequestOption::WithCredentials(value) => {
+                            let value_string = {
+                                if *value {
+                                    "true"
+                                } else {
+                                    "false"
+                                }
+                            };
+                            options_strings.push(format!("withCredentials:{value_string}"));
                         }
                     }
                 }
@@ -292,11 +314,16 @@ impl HtmlAction {
     }
 }
 
+// https://mithril.js.org/request.html
 #[derive(Clone)]
 pub enum AjaxRequestOption {
     Method(String),
     Params(HashMap<String, String>),
     Body(String),
+    User(String),
+    Password(String),
+    WithCredentials(bool),
+    Headers(HashMap<String, String>),
 }
 
 pub trait ToAttributeValue {
