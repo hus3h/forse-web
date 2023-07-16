@@ -1,5 +1,7 @@
 use std::rc::Rc;
 
+use crate::node::Node;
+
 pub struct Context {
     pub router: Router,
 }
@@ -54,12 +56,14 @@ impl Router {
 
 pub struct RouterPath {
     pub path: String,
+    pub content: Box<dyn Fn() -> Node>,
 }
 
 impl RouterPath {
-    pub fn new(path: &str) -> Self {
+    pub fn new(path: &str, content_callback: impl Fn() -> Node + 'static) -> Self {
         Self {
             path: path.to_string(),
+            content: Box::new(content_callback),
         }
     }
 }
