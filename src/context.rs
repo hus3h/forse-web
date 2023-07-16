@@ -28,10 +28,10 @@ impl Context {
                 });
                 Ok(())
             } else {
-                Err("Cannot call this function more than once".to_string())
+                Err("Invalid default route path".to_string())
             }
         } else {
-            Err("Invalid default route path".to_string())
+            Err("Cannot call this function more than once".to_string())
         }
     }
 }
