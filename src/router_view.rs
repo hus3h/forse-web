@@ -3,13 +3,13 @@ use std::rc::Rc;
 use crate::node::Node;
 
 pub struct RouterView {
-    router: Router,
+    content: RouterViewContent,
 }
 
 impl RouterView {
     pub fn new() -> Self {
         Self {
-            router: Router::new(),
+            content: RouterViewContent::new(),
         }
     }
 
@@ -29,7 +29,7 @@ impl RouterView {
             final_routes.push(new_path);
         }
         if let Some(value) = default_route {
-            self.router = Router {
+            self.content = RouterViewContent {
                 routes: final_routes,
                 default_route: Some(value),
             };
@@ -40,14 +40,14 @@ impl RouterView {
     }
 }
 
-struct Router {
+struct RouterViewContent {
     pub routes: Vec<Rc<RouterPath>>,
     pub default_route: Option<Rc<RouterPath>>,
 }
 
-impl Router {
+impl RouterViewContent {
     pub fn new() -> Self {
-        Router {
+        RouterViewContent {
             routes: Default::default(),
             default_route: None,
         }
