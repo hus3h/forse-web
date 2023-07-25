@@ -2,11 +2,11 @@ use std::rc::Rc;
 
 use crate::node::Node;
 
-pub struct Context {
-    pub router: Router,
+pub struct RouterView {
+    router: Router,
 }
 
-impl Context {
+impl RouterView {
     pub fn new() -> Self {
         Self {
             router: Router::new(),
@@ -40,7 +40,7 @@ impl Context {
     }
 }
 
-pub struct Router {
+struct Router {
     pub routes: Vec<Rc<RouterPath>>,
     pub default_route: Option<Rc<RouterPath>>,
 }
