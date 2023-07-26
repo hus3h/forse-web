@@ -1,6 +1,8 @@
 use crate::{
     attribute::{Attribute, AttributeValue},
     event::HtmlAction,
+    router_view::RouterView,
+    site::Context,
     utils::{parse_elem_properties, HTML_VOID_ELEMENTS},
 };
 
@@ -15,11 +17,12 @@ pub enum Node {
     Tag(TagNode),
     Text(RawTextNode),
     Html(RawTextNode),
+    RouterView(RouterView),
     None,
 }
 
 impl Node {
-    pub fn to_html(&self) -> String {
+    pub fn to_html(&self, context: &Context) -> String {
         match self {
             Self::Tag(elem) => {
                 if let Some(properties) = &elem.properties {
@@ -51,14 +54,27 @@ impl Node {
                         attributes = " ".to_owned() + &attributes;
                     }
                     if !HTML_VOID_ELEMENTS.contains(&tag) {
-                        let inner: String =
-                            elem.children.iter().map(|item| item.to_html()).collect();
+                        let inner: String = elem
+                            .children
+                            .iter()
+                            .map(|item| item.to_html(context))
+                            .collect();
                         format!("{outer_before}<{tag}{attributes}>{inner}</{tag}>{outer_after}")
                     } else {
                         format!("{outer_before}<{tag}{attributes} />{outer_after}")
                     }
                 } else {
-                    elem.children.iter().map(|item| item.to_html()).collect()
+                    elem.children
+                        .iter()
+                        .map(|item| item.to_html(context))
+                        .collect()
+                }
+            }
+            Self::RouterView(view) => {
+                if let Some(node) = view.to_node(context) {
+                    node.to_html(context)
+                } else {
+                    (Self::None).to_html(context)
                 }
             }
             Self::Text(text) => text.content.to_owned(), // todo: escape text
@@ -68,7 +84,7 @@ impl Node {
     }
 
     // todo: make sure this follows the different hyperscript cases
-    pub fn to_hyperscript(&self, function_name: &str) -> String {
+    pub fn to_hyperscript(&self, function_name: &str, context: &Context) -> String {
         match self {
             Self::Tag(elem) => {
                 if let Some(properties) = &elem.properties {
@@ -78,7 +94,7 @@ impl Node {
                         let inner: Vec<String> = elem
                             .children
                             .iter()
-                            .map(|item| item.to_hyperscript(function_name))
+                            .map(|item| item.to_hyperscript(function_name, context))
                             .filter(|item| item != "")
                             .collect();
                         if inner.len() > 0 {
@@ -106,10 +122,17 @@ impl Node {
                     let result: Vec<String> = elem
                         .children
                         .iter()
-                        .map(|item| item.to_hyperscript(function_name))
+                        .map(|item| item.to_hyperscript(function_name, context))
                         .filter(|item| item != "")
                         .collect();
                     result.join(",")
+                }
+            }
+            Self::RouterView(view) => {
+                if let Some(node) = view.to_node(context) {
+                    node.to_hyperscript(function_name, context)
+                } else {
+                    (Self::None).to_hyperscript(function_name, context)
                 }
             }
             Self::Text(text) => {

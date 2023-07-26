@@ -1,7 +1,8 @@
 use std::rc::Rc;
 
-use crate::node::Node;
+use crate::{node::Node, site::Context};
 
+#[derive(Clone)]
 pub struct RouterView {
     content: RouterViewContent,
 }
@@ -38,8 +39,25 @@ impl RouterView {
             Err("Invalid default route path".to_string())
         }
     }
+
+    // explicit, not impl ToNode
+    pub fn to_node(&self, context: &Context) -> Option<Node> {
+        for route in &self.content.routes {
+            // todo
+            if true {
+                return Some((route.content)());
+            }
+        }
+
+        if let Some(route) = &self.content.default_route {
+            Some((route.content)())
+        } else {
+            None
+        }
+    }
 }
 
+#[derive(Clone)]
 struct RouterViewContent {
     pub routes: Vec<Rc<RouterPath>>,
     pub default_route: Option<Rc<RouterPath>>,
